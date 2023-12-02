@@ -23,18 +23,18 @@ library(tidyverse)
 my_data <- as_tibble(read_lines("Data/day2_input.txt")) %>%
   separate_wider_regex(value, c("Game ", game = "\\d+", ": ", trials = ".*"), cols_remove = TRUE) %>%
   mutate(game = as.numeric(game)) %>%
-  # separate_rows has been superseded by this
+  # separate_rows has been superseded by separate_longer_delim
   separate_longer_delim(trials, delim = "; ") %>%
-  # Generate a trial ID within each game
+  # Generate a trial ID within each game - note: it turned out that this was not needed in the end
   group_by(game) %>%
   mutate(trial_id = row_number()) %>%
   ungroup() %>%
   separate_longer_delim(trials, delim = ", ") %>%
-  #separate superseded by separate_wide_delim
+  #separate superseded by separate_wider_delim
   separate_wider_delim (trials, names = c("n", "colour"), delim = " ") %>%
   mutate (n = as.numeric(n))
 
-# With my data structure it's easiest to identify the impossible games and subtract from all games
+# With my data structure it seems easiest to identify the impossible games and subtract from all games
 
 sum_all_game_ids <- sum(unique(my_data$game))
 
