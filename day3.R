@@ -62,7 +62,7 @@ my_adjacents <- my_specials %>%
   distinct() # dedupe as we have some locations > once
 
 # Extract 'spans' of numbers so that we can associate each digit location with the number it is part of
-# Dataframe has row, start, end and number; where start and end are the locations of the start and end of a number
+# Dataframe has row, start, end and number; where start and end are the columns that the number starts and ends in
 my_spans <- my_data %>%
   mutate(locs = str_locate_all(value, "\\d+")) %>%
   unnest_longer(locs) %>%
@@ -80,8 +80,7 @@ my_digit_locs <- my_spans %>%
   unnest_longer(column)
 
 # Intersect the adjacent locations with the digit locations
-# We might have the same part number more than once in different locations
-# The distinct line is because we may have identified the same part number more than once
+# The distinct line is because we may have identified the same part number in the same location more than once
 
 my_intersect <- left_join(my_adjacents, my_digit_locs, by = c("row", "column")) %>%
   filter(!is.na(number)) %>%
@@ -91,7 +90,7 @@ my_intersect <- left_join(my_adjacents, my_digit_locs, by = c("row", "column")) 
 # i.e. if 123 appears in two different places on the grid we include it twice in the sum
 part1 <- sum(my_intersect$number)
 
-# Part 2 - now we want to use only * and only when they are adjacent to exactly two separate part numbers
+# Part 2 - now we want to use only * and only when the * is adjacent to exactly two part numbers
 # We multiply together the two part numbers and sum those to get the second answer
 
 # Extract locations of stars
