@@ -6,10 +6,9 @@ library(tidyverse)
 
 # Part 1
 # Need to find all numbers containing at least one digit that is adjacent (one step) to non-full stop symbols
-# Numbers are when you have horizontally adjacent digits, e.g. 573 is five hundred and seventy-three
 # Adjacency is horizontal, vertical or diagonal
-# Final answer is the sum of the adjacent numbers
-
+# Numbers are when you have horizontally adjacent digits, e.g. 573 is five hundred and seventy-three
+# Final answer is the sum of the numbers adjacent to symbols
 
 find_adjacent <- function(my_row, my_col, no_adj = 1){
 # Find locations of adjacent cells
@@ -30,11 +29,13 @@ my_file <- "Data/day3_input.txt"
 
 # General idea is to:
 # extract the locations adjacent to special characters as row, column
-# extract the locations of digits as row, column and have a third column saying what number the digit is part of
-# find the intersections between these two datasets by row and column
+# extract the locations of digits as row, column and have additional columns that:
+#   (i) say what number the digit is part of
+#   (ii) uniquely identify the number
+# find the intersecting locations between these two datasets
 
-# Don't need to worry about some adjacent locations being 'outside the grid' because they will not intersect
-# with any of the digits
+# Don't need to worry about some adjacent locations being 'outside the grid' (e.g. column 0)
+# because they will not intersect with any of the digits
 
 # Read in data
 my_data <- as_tibble(read_lines(my_file)) %>%
