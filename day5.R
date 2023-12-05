@@ -73,7 +73,6 @@ t_lookup <- my_data %>%
   mutate (delta = dest - source)
 
 # Store the outputs from various steps in case we need them for part 2 (spolier: we didn't)
-# Need to write a for loop here as the outputs chain together
 
 # Would like to have written a for loop that uses the column names and items array but got stuck on the syntax
 # Could just have written a normal loop on an array but wanted to preserve intermediate steps in case they are needed for part 2
@@ -99,11 +98,12 @@ print(part1)
 # Work with ranges and split the ranges 
 
 # We map onto very few output deltas (difference between input value and output value) so can we split the ranges at each point delta changes?
+# The smallest output value will always be at the bottom of a range
 
 start.time <- Sys.time()
 
 # Function that takes a set of ranges of one variable and finds overlaps between these ranges and the lookup tables between that variable and the next one
-# Sometimes the original range overlaps one or more looked up ranges
+# Sometimes the original range overlaps one or more looked up ranges but this is accounted for also
 return_splits <- function(in_source_lower, in_source_upper, in_source_name, in_dest_name, t_lookup){
   # Extract all overlapping ranges
   # Note that t_lookup is sorted by source value and group number
@@ -130,16 +130,11 @@ return_splits <- function(in_source_lower, in_source_upper, in_source_name, in_d
            group_order >= min(to_manipulate$group_order) &
            group_order <= max(to_manipulate$group_order))
 
-  
- # print(to_manipulate)
-#  print(to_use)
   to_use <- to_use %>%
     mutate (use_source_lower = ifelse(in_source_lower > source, in_source_lower, source)) %>% # set the ends of the new split ranges
     mutate (use_source_upper = ifelse(in_source_upper < source_upper, in_source_upper, source_upper)) %>% # set the ends of the new split ranges
     mutate (dest_lower = use_source_lower + delta) %>%
     mutate (dest_upper = use_source_upper + delta)
-  
-  
   
   to_return <- to_use %>%
     select(dest_lower, dest_upper) %>%
@@ -150,6 +145,7 @@ return_splits <- function(in_source_lower, in_source_upper, in_source_name, in_d
 
 
 # Function that takes a complete lookup table and looks up the next set of ranges, e.g. you put in the seeds ranges and get the soil ranges
+# Uses bind_rows because you sometimes get multiple output ranges for a single input range
 compute_next <- function(data_in, in_source_name, in_dest_name, t_lookup){
   for (i in seq_along(data_in$lower)){
     if (i == 1){
@@ -162,8 +158,6 @@ compute_next <- function(data_in, in_source_name, in_dest_name, t_lookup){
   }
   return(data_out)
 }
-
-
 
 # Manipulate input data
  seeds2 <- seeds %>%
@@ -184,7 +178,7 @@ t_lookup_sorted <- t_lookup %>%
   ungroup()
 
 # Looking at the mappings, the range of each mapping input seemed to go from 0 to 2^32 and that most (but not all) of this range was covered by the provided data
-# Fill in any gaps in the lookup table 
+# Fill in any gaps in the lookup table to complete it
 
 # We will add any rows to t_lookup_additional by looping through t_lookup_sorted and looking for gaps
 t_lookup_additional <- t_lookup_sorted %>%
@@ -192,7 +186,8 @@ t_lookup_additional <- t_lookup_sorted %>%
   select (-lowest_source, -highest_source)
 
 for(i in seq_along(t_lookup_sorted$source_name)){
-  # First row in each group (e.g. seed to soil) is a special case
+  # First row in each group (e.g. seed to soil) is a special case as the row before it is not from the same group
+  # and it might not start at zero currently
   if (t_lookup_sorted$group_order[i] == 1){
     if (t_lookup_sorted$source[i] != 0){
       #print("add 0")
@@ -250,7 +245,6 @@ t_lookup_additional<- t_lookup_additional %>%
   arrange(source, .by_group = TRUE) %>%
   mutate(group_order = row_number()) %>%
   ungroup()
-
 
 # Walk through the mappings to get locations
 soil2 <- compute_next(seeds2, "seed", "soil", t_lookup_additional)
