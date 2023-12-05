@@ -55,7 +55,7 @@ for (i in seq_along(my_data$id)){
   if(my_data$matches[i] > 0){
     lower_range <- min(c(i+1, length(my_data$no_to_process)))
     upper_range <- min(c(i+my_data$matches[i], length(my_data$no_to_process)))
-    my_data$no_to_process[lower_range:upper_range] =  my_data$no_to_process[lower_range:upper_range] + my_data$no_to_process[i]
+    my_data$no_to_process[lower_range:upper_range] = my_data$no_to_process[lower_range:upper_range] + my_data$no_to_process[i]
   }
 }
 
