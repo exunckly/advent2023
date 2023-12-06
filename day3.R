@@ -1,4 +1,4 @@
-# Advent of code 2023 - Day 2
+# Advent of code 2023 - Day 3
 
 library(tidyverse)
 

@@ -33,7 +33,6 @@ my_data <- read_lines("Data/day6_input.txt") %>%
   slice (-1) %>%
   mutate(across(everything(), as.numeric)) %>%
   set_names (c("t", "r")) %>%
-  mutate (r_test = 0) %>%
   mutate (source = "part1")
   
 # Part 2 - oh no, there is one race only and we should ignore the spaces between the numbers
@@ -60,7 +59,7 @@ my_data <- my_data %>%
   mutate (i_1_int = ifelse (i_1 == round(i_1, 0), ceiling(i_1) + 1, ceiling(i_1))) %>%
   mutate (i_2_int = ifelse (i_2 == round(i_2, 0), floor(i_2) - 1, floor(i_2))) %>%
   mutate (num_ways = abs(i_2_int - i_1_int) + 1) %>%
-  # In case they are needed in part 2 :-)
+  # In case they are needed in part 2 :-) (spoiler: they weren't)
   mutate (max_hold = t/2) %>%
   mutate (max_hold_int = round(max_hold, 0)) %>%
   mutate (max_dist = 0.25*t^2)
