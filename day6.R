@@ -38,8 +38,7 @@ my_data <- read_lines("Data/day6_input.txt") %>%
 # Part 2 - oh no, there is one race only and we should ignore the spaces between the numbers
 additional_data <- read_lines("Data/day6_input.txt") %>%
   str_replace_all("\\s+", "") %>%
-  str_replace_all("Time:", "") %>%
-  str_replace_all("Distance:", "") %>%
+  str_extract_all("\\d+") %>%
   as.numeric()
 
 my_data <- my_data %>%
