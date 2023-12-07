@@ -49,7 +49,7 @@ card_ranks <- c("A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2")
 
 represent_hands <- function (my_data, card_ranks){
 # Make the hand representations
-# I was wondering if part 2 might change the tiebreak rules, so preserved more information than needed in the end
+# I was wondering if part 2 might change the tiebreak rules, e.g. so that QQ beat 55, so preserved more information than needed in the end
 my_data <- my_data %>%
   mutate(!!!setNames(rep(NA, length(card_ranks)), card_ranks))
 
@@ -89,7 +89,7 @@ my_data1 <- my_data %>%
   represent_hands(card_ranks) %>%
   rank_hands(hand_ranks, card_ranks)
 
-# Total winnings is the bid * the rank (which seems a shame as 'high' hands win less?)
+# Total winnings is the bid * the rank
  part1 <- sum(my_data1$winnings)
  print(part1)
 
