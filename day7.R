@@ -28,6 +28,7 @@ my_data <- as_tibble(read_lines("Data/day7_input.txt")) %>%
   dplyr::mutate(bid = as.numeric(bid))
 
 # Represent hands using a string that says how many of a kind we have
+# Post hoc note - hand_rep essentially re-invents rle() from base R, which I didn't know about
 hand_ranks <- tibble(hand_type = c("five of a kind",
                                   "four of a kind",
                                   "full house",
@@ -45,40 +46,48 @@ hand_ranks <- tibble(hand_type = c("five of a kind",
 card_ranks <- c("A", "K", "Q", "J", "T", "9", "8", "7", "6", "5", "4", "3", "2")
 
 
-# Make the hand representations
-make_hand_reps <- function(my_data, card_ranks){
 
-  my_data <- my_data %>%
-    mutate(!!!setNames(rep(NA, length(card_ranks)), card_ranks))
-  
+represent_hands <- function (my_data, card_ranks){
+# Make the hand representations
+# I was wondering if part 2 might change the tiebreak rules, so preserved more information than needed in the end
+my_data <- my_data %>%
+  mutate(!!!setNames(rep(NA, length(card_ranks)), card_ranks))
+
   for (i in seq_along(card_ranks)){
-    for(j in seq_along(my_data$hand)){
-      my_data[j,(i+2)] <- ifelse(str_detect(my_data$hand[j], card_ranks[i]),
-                                 length(str_extract_all(my_data$hand[j],card_ranks[i])[[1]]), 0)
-    }
+    var_name <- card_ranks[i]
+    my_data <- my_data %>%
+      rowwise() %>%
+      mutate("{var_name}" := ifelse(str_detect(hand, var_name), length(str_extract_all(hand,var_name)[[1]]), 0))
   }
   return(my_data)
 }
 
-my_data1 <- make_hand_reps(my_data, card_ranks)
+rank_hands <- function (my_data, hand_ranks, card_ranks){
+  # Rank the hands
+  my_data <- my_data %>%
+    unite("hand_rep", A:`2`, sep = "", remove = FALSE) %>%
+    mutate(hand_rep = str_replace_all(hand_rep,"0", "")) %>%
+    rowwise() %>%
+    mutate(hand_rep = paste(sort(unlist(strsplit(hand_rep, "")), decreasing = TRUE), collapse="")) %>%
+    # Make the hand rankings
+    # smaller numbers are better ranks
+    left_join(hand_ranks, by = "hand_rep") %>%
+    # Make the tiebreaks by returning the positions of each card in the card_rank as a hex number
+    # then representing this as one hex number by smashing them together
+    # Smaller numbers are better ranks
+    mutate(tiebreak = as.hexmode(paste(as.hexmode(match(unlist(strsplit(hand, "")), card_ranks)), collapse = ""))) %>%
+    # sort the data by hand_rank then by tiebreak
+    ungroup() %>%
+    arrange(desc(hand_rank), desc(tiebreak)) %>%
+    # Calculate ranks and winnings
+    mutate (overall_rank = row_number()) %>%
+    mutate (winnings = bid * overall_rank)
+  return(my_data)
+}
 
-my_data1 <- my_data1 %>%
-  unite("hand_rep", A:`2`, sep = "", remove = FALSE) %>%
-  mutate(hand_rep = str_replace_all(hand_rep,"0", "")) %>%
-  rowwise() %>%
-  mutate(hand_rep = paste(sort(unlist(strsplit(hand_rep, "")), decreasing = TRUE), collapse="")) %>%
-  # Make the hand rankings
-  # smaller numbers are better ranks
-  left_join(hand_ranks, by = "hand_rep") %>%
-  # Make the tiebreaks by returning the positions of each card in the card_rank as a hex number
-  # the representing this as a hex number by smashing them together
-  # Smaller numbers are better ranks
-  mutate(tiebreak = as.hexmode(paste(as.hexmode(match(unlist(strsplit(hand, "")), card_ranks)), collapse = ""))) %>%
-  # sort the data by hand_rank then by tiebreak
-  ungroup() %>%
-  arrange(desc(hand_rank), desc(tiebreak)) %>%
-  mutate (overall_rank = row_number()) %>%
-  mutate (winnings = bid * overall_rank)
+my_data1 <- my_data %>%
+  represent_hands(card_ranks) %>%
+  rank_hands(hand_ranks, card_ranks)
 
 # Total winnings is the bid * the rank (which seems a shame as 'high' hands win less?)
  part1 <- sum(my_data1$winnings)
@@ -87,41 +96,29 @@ my_data1 <- my_data1 %>%
 
 # Part 2 - J cards are now jokers not jacks
  
-# Add the number of jokers to the highest ranked card that has the highest number of copies 
-card_ranks2 <- c("A", "K", "Q", "T", "9", "8", "7", "6", "5", "4", "3", "2", "J")
-my_data2 <- make_hand_reps(my_data, card_ranks2)
 
-my_data3 <- my_data2 %>%
+card_ranks2 <- c("A", "K", "Q", "T", "9", "8", "7", "6", "5", "4", "3", "2", "J")
+
+# Represent the hands but with this different order
+my_data2 <- my_data %>%
+  represent_hands(card_ranks2) %>%
   rowwise() %>%
+  # This seems to be where 'thinking like it's Excel' ties me in knots a bit
   # Maximum number of cards that are the same
   mutate(max_same = max(c_across(A:`2`))) %>%
-  # Leftmost position with A column = 1
+  # Leftmost position with max_same cards
   mutate(pos_same = min(which(max_same == (c_across(A:`2`)))))
+  # Add the number of jokers to the highest ranked card that has the highest number of copies 
+  # The next line didn't work because I couldn't work out how to refer to the value in the column named J
+  # mutate(across(A:`2`, ~ifelse(cur_column() == pos_same, .x + J, .x)))
 
-# Add the jokers
-for (i in seq_along(my_data3$hand)){
-  my_data3[i, (my_data3$pos_same[i]+2)] = my_data3[i, (my_data3$pos_same[i]+2)] + my_data3$J[i]
-}
+ for (i in seq_along(my_data2$hand)){
+   my_data2[i, (my_data2$pos_same[i]+2)] = my_data2[i, (my_data2$pos_same[i]+2)] + my_data2$J[i]
+ } 
 
-# Do the card ranking excluding the jokers
-
-my_data3 <- my_data3 %>%
-  unite("hand_rep", A:`2`, sep = "", remove = FALSE) %>%
-  mutate(hand_rep = str_replace_all(hand_rep,"0", "")) %>%
-  rowwise() %>%
-  mutate(hand_rep = paste(sort(unlist(strsplit(hand_rep, "")), decreasing = TRUE), collapse="")) %>%
-  # Make the hand rankings
-  # smaller numbers are better ranks
-  left_join(hand_ranks, by = "hand_rep") %>%
-  # Make the tiebreaks by returning the positions of each card in the card_rank as a hex number
-  # the representing this as a hex number by smashing them together
-  # Smaller numbers are better ranks
-  mutate(tiebreak = as.hexmode(paste(as.hexmode(match(unlist(strsplit(hand, "")), card_ranks2)), collapse = ""))) %>%
-  # sort the data by hand_rank then by tiebreak
-  ungroup() %>%
-  arrange(desc(hand_rank), desc(tiebreak)) %>%
-  mutate (overall_rank = row_number()) %>%
-  mutate (winnings = bid * overall_rank)
+# Rank the hands
+my_data2 <- my_data2 %>%
+  rank_hands(hand_ranks, card_ranks2)
   
-part2 <- sum(my_data3$winnings)
+part2 <- sum(my_data2$winnings)
 print(part2)
