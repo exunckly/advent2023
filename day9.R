@@ -1,7 +1,7 @@
 # Advent of code 2023 - Day 9
 library(tidyverse)
 
-# Recursive function to gfind next and zeroth in sequence
+# Recursive function to find next and zeroth in sequence
 # In part 1 the next value in the sequence is sum(keep_track_f) from this recursive function
 # Iterations is for debugging
 #   Post hoc note: purr::accumulate() would have been helpful
